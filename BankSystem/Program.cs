@@ -123,7 +123,7 @@ namespace MiniBankSystem
                 Console.WriteLine("Enter your full name:");
                 name = Console.ReadLine();
 
-                if (string.IsNullOrWhiteSpace(name))
+                if (string.IsNullOrWhiteSpace(name)) // IsNullOrWhiteSpace use check if there any space 
                 {
                     Console.WriteLine("Full name cannot be empty. Please try again.");
                 }
@@ -135,7 +135,8 @@ namespace MiniBankSystem
                 Console.WriteLine("Enter your National ID (10 digits):");
                 nationalID = Console.ReadLine();
 
-                if (string.IsNullOrWhiteSpace(nationalID) || nationalID.Length != 10 || !nationalID.All(char.IsDigit))
+                if (string.IsNullOrWhiteSpace(nationalID) || nationalID.Length != 10 || !nationalID.All(char.IsDigit)) 
+                    
                 {
                     Console.WriteLine("National ID must be exactly 10 digits. Please try again.");
                 }
@@ -289,6 +290,8 @@ namespace MiniBankSystem
             Console.WriteLine($"Account Number: {AcountNum[index]}");
             Console.WriteLine($"Account Holder: {accountNames[index]}");
             Console.WriteLine($"Balance: {balances[index]} OMR");
+            Console.ReadLine();
+
         }
 
         static void SaveAccountInformationInFile()
@@ -344,7 +347,7 @@ namespace MiniBankSystem
         {
             Console.WriteLine("Enter your review:");
             string review = Console.ReadLine();
-            if (!string.IsNullOrWhiteSpace(review))
+            if (!string.IsNullOrWhiteSpace(review)) 
             {
                 reviewsStack.Push(review);
                 Console.WriteLine("Review submitted successfully.");
