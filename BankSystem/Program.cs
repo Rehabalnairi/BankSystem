@@ -258,16 +258,28 @@ namespace MiniBankSystem
             if (index == -1) return;
 
             Console.WriteLine("Enter deposit amount:");
-            if (double.TryParse(Console.ReadLine(), out double amount) && amount > 0)
+            if (double.TryParse(Console.ReadLine(), out double amount))
             {
+                if (amount < 1)
+                {
+                    Console.WriteLine("Minimum deposit amount is 1 OMR!");
+                    Console.WriteLine("\nPress Enter to continue...");
+                    Console.ReadLine();
+                    return;
+                }
+
                 balances[index] += amount;
-                Console.WriteLine("Deposit successful.");
+                Console.WriteLine($"Deposit successful. New Balance: {balances[index]} OMR");
             }
             else
             {
                 Console.WriteLine("Invalid amount.");
             }
+
+            Console.WriteLine("\nPress Enter to continue...");
+            Console.ReadLine();
         }
+
 
         static void ViewBalance()
         {
