@@ -16,6 +16,7 @@ namespace MiniBankSystem
 
         static Queue<string> RequestAccountCreate = new Queue<string>();
         static Stack<string> reviewsStack = new Stack<string>();
+        //List<string> approvedNationalIDs = new List<string>();
 
         static int LastAccountNumber;
 
@@ -141,7 +142,7 @@ namespace MiniBankSystem
                 nationalID = Console.ReadLine();
 
                 // Check if the national ID is not empty, exactly 10 digits, and all characters are numbers
-                if (string.IsNullOrWhiteSpace(nationalID) || nationalID.Length != 10 || !nationalID.All(char.IsDigit))
+                if (string.IsNullOrWhiteSpace(nationalID) || nationalID.Length != 10 || !nationalID.All(char.IsDigit)) // if input is only nmbers 
                 {
                     Console.WriteLine("National ID must be exactly 10 digits. Please try again.");
                 }
