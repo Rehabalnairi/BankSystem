@@ -16,6 +16,7 @@ namespace MiniBankSystem
 
         static Queue<string> RequestAccountCreate = new Queue<string>();
         static Stack<string> reviewsStack = new Stack<string>();
+        const string AdminPassword = "Rehab23";
         //List<string> approvedNationalIDs = new List<string>();
 
         static int LastAccountNumber;
@@ -114,6 +115,75 @@ namespace MiniBankSystem
             }
         }
 
+
+        static bool UserLogin()
+
+        {
+            Console.WriteLine("Enter your account number:");
+            try
+            {
+                int accNum = Convert.ToInt32(Console.ReadLine());
+                int index = AcountNum.IndexOf(accNum);
+                if (index != -1)
+                {
+                    Console.WriteLine($"Welcome,{accountNames[index]}!");
+                    Console.ReadLine();
+                    return true;
+                }
+                else
+                {
+                    Console.WriteLine("Account not found!");
+                    Console.ReadLine();
+                    return false;
+
+
+
+
+                }
+            }
+            catch
+            {
+                Console.WriteLine("Invaild Input");
+                Console.ReadLine();
+                return false;
+            }
+        }
+        static bool AdminLogin()
+        {
+            Console.WriteLine("Enter admin password:");
+            string password = Console.ReadLine();
+            if (password == AdminPassword)
+            {
+                Console.WriteLine("Welcome, Admin!");
+                return true;
+            }
+            else
+            {
+                Console.WriteLine("Incorrect password.");
+                return false;
+            }
+        }
+
+
+        //    if (!File.Exists(AccountsFilePath))
+        //    {
+        //        Console.WriteLine("Accounts file not found.");
+        //        return;
+        //    }
+
+        //    var allAccounts = File.ReadAllLines(AccountsFilePath);
+        //    List<string> nationalIDs = new List<string>();
+
+
+        //    foreach (var account in allAccounts)
+        //    {
+        //        var parts = account.Split('|');
+        //        if (parts.Length >= 2)
+        //        {
+        //            nationalIDs.Add(parts[1].Trim()); 
+        //        }
+        //    }
+
         static void RequestAccountCreation()
         {
             string name;
@@ -128,10 +198,12 @@ namespace MiniBankSystem
                 Console.WriteLine("Enter your full name:");
                 name = Console.ReadLine();
 
-                if (string.IsNullOrWhiteSpace(name)) // Check if the name is empty or only spaces
+                if (string.IsNullOrWhiteSpace(name)); // Check if the name is empty or only spaces
                 {
                     Console.WriteLine("Full name cannot be empty. Please try again.");
                 }
+
+                
 
             } while (string.IsNullOrWhiteSpace(name));
 
