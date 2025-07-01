@@ -17,7 +17,9 @@ namespace MiniBankSystem
         static Queue<string> RequestAccountCreate = new Queue<string>();
         static Stack<string> reviewsStack = new Stack<string>();
         const string AdminPassword = "Rehab23";
+    
         //List<string> approvedNationalIDs = new List<string>();
+        static List <string> NationalID = new List<string>(); //store national Id in List 
 
         static int LastAccountNumber;
 
@@ -33,13 +35,19 @@ namespace MiniBankSystem
                 Console.WriteLine("Bank System");
                 Console.WriteLine("1. User Menu");
                 Console.WriteLine("2. Admin Menu");
+                Console.WriteLine("3. Create Account"); // Option to create a new account
                 Console.WriteLine("0. Exit");
                 Console.Write("Select option: ");
                 string mainChoice = Console.ReadLine();
                 switch (mainChoice)
                 {
-                    case "1": UserMenu(); break;
+                    case "1":int userIdxt = UserLogin();
+                          if(userIdxt != -1) // Check if the user login was successful
+                            UserMenu(); // Call UserMenu method to display user options
+
+                        break;
                     case "2": AdminMenu(); break;
+                    case "3": RequestAccountCreation(); break; // Call CreateAccount method to handle account creation
                     case "0": running = false; break;
                     default:
                         Console.WriteLine("Invalid option. Try again.");
@@ -54,13 +62,15 @@ namespace MiniBankSystem
             while (userMenuRunning)
             {
                 Console.Clear();
+            
+
                 Console.WriteLine("========== User Menu ==========");
                 Console.WriteLine("1. View Account Balance");
                 Console.WriteLine("2. Deposit Money");
                 Console.WriteLine("3. Withdraw Money");
                 Console.WriteLine("4. Submit a Review");
-                Console.WriteLine("5. Request Account Creation"); 
-                Console.WriteLine("0. Back to Main Menu");
+               // Console.WriteLine("5. Request Account Creation"); 
+                Console.WriteLine("0. login Menu");
                 Console.WriteLine("Select an option: ");
 
                 string userChoice = Console.ReadLine();
@@ -71,7 +81,7 @@ namespace MiniBankSystem
                     case "2": Deposit(); break;
                     case "3": Withdraw(); break;
                     case "4": SubmitReview(); break;
-                    case "5": RequestAccountCreation(); break; 
+                  //  case "5": RequestAccountCreation(); break; 
                     case "0": userMenuRunning = false; break;
                     default:
                         Console.WriteLine("Invalid option. Please try again.");
@@ -81,7 +91,10 @@ namespace MiniBankSystem
             }
         }
 
+         static void CreateAccount()
+        {
 
+        }
         static void AdminMenu()
         {
             bool adminMenuRunning = true;
@@ -116,25 +129,28 @@ namespace MiniBankSystem
         }
 
 
-        static bool UserLogin()
+        static int UserLogin()
 
         {
-            Console.WriteLine("Enter your account number:");
+            Console.WriteLine("Enter your National ID (10 digits:");
+       
             try
             {
-                int accNum = Convert.ToInt32(Console.ReadLine());
-                int index = AcountNum.IndexOf(accNum);
+               // int accNum = Convert.ToInt32(Console.ReadLine());
+                string inputID = Console.ReadLine().Trim(); // Read the National ID input and trim any extra spaces
+
+                int index = NationalID.IndexOf(inputID);
                 if (index != -1)
                 {
                     Console.WriteLine($"Welcome,{accountNames[index]}!");
                     Console.ReadLine();
-                    return true;
+                    return index;
                 }
                 else
                 {
-                    Console.WriteLine("Account not found!");
+                    Console.WriteLine("National ID not found!");
                     Console.ReadLine();
-                    return false;
+                    return -1;
 
 
 
@@ -145,7 +161,7 @@ namespace MiniBankSystem
             {
                 Console.WriteLine("Invaild Input");
                 Console.ReadLine();
-                return false;
+                return -1;
             }
         }
         static bool AdminLogin()
@@ -186,48 +202,25 @@ namespace MiniBankSystem
 
         static void RequestAccountCreation()
         {
-            string name;
-            string nationalID;
-            //RequestAccountCreate.Enqueue("Ahmed AlBalushi|1234567890");
-            //RequestAccountCreate.Enqueue("Fatima AlZadjali|0987654321");
-
-
-            // Get full name
+            string name, nid;
             do
             {
-                Console.WriteLine("Enter your full name:");
-                name = Console.ReadLine();
-
-                if (string.IsNullOrWhiteSpace(name)); // Check if the name is empty or only spaces
-                {
-                    Console.WriteLine("Full name cannot be empty. Please try again.");
-                }
-
-                
-
+                Console.Write("Enter Full Name: ");
+                name = Console.ReadLine().Trim();
+                if (string.IsNullOrWhiteSpace(name)) Console.WriteLine("Name cannot be empty.");
             } while (string.IsNullOrWhiteSpace(name));
 
-            // Get National ID
             do
             {
-                Console.WriteLine("Enter your National ID (10 digits):");
-                nationalID = Console.ReadLine();
+                Console.Write("Enter 10-digit National ID: ");
+                nid = Console.ReadLine().Trim();
+                if (nid.Length != 10 || !nid.All(char.IsDigit))
+                    Console.WriteLine("Invalid National ID.");
+            } while (nid.Length != 10 || !nid.All(char.IsDigit));
 
-                // Check if the national ID is not empty, exactly 10 digits, and all characters are numbers
-                if (string.IsNullOrWhiteSpace(nationalID) || nationalID.Length != 10 || !nationalID.All(char.IsDigit)) // if input is only nmbers 
-                {
-                    Console.WriteLine("National ID must be exactly 10 digits. Please try again.");
-                }
-
-            } while (string.IsNullOrWhiteSpace(nationalID) || nationalID.Length != 10 || !nationalID.All(char.IsDigit));
-
-            // Add the request to the queue
-            string request = $"{name}|{nationalID}";
-            RequestAccountCreate.Enqueue(request);
-           // ViewPendingRequests();
-            Console.WriteLine("Account creation request submitted successfully!");
-            Console.WriteLine("\nPress any key to continue...");
-            Console.ReadKey();
+            RequestAccountCreate.Enqueue($"{name}|{nid}");
+            Console.WriteLine("Request submitted.");
+            Console.ReadLine();
         }
 
         static void ProcessNextRequest()
@@ -249,16 +242,23 @@ namespace MiniBankSystem
 
             string name = parts[0].Trim();
             string nationalID = parts[1].Trim();// trim any extra spaces
+         
 
             int newAccountNumber = ++LastAccountNumber;
             // Add new account details
             AcountNum.Add(newAccountNumber);
+         
             accountNames.Add(name);
+       
+
+
             balances.Add(MinBalance);
 
             Console.WriteLine("\nAccount created successfully:");
             Console.WriteLine($"Account Number: {newAccountNumber}");
             Console.WriteLine($"Account Holder: {name}");
+          
+          
             Console.WriteLine($"Initial Balance: {MinBalance} OMR");
             Console.WriteLine("\nPress Enter to continue...");
             Console.ReadLine();
@@ -412,7 +412,7 @@ namespace MiniBankSystem
                   
                         for (int i = 0; i < AcountNum.Count; i++)
                     {
-                        writer.WriteLine($"{AcountNum[i]}|{accountNames[i]}|{balances[i]}");
+                        writer.WriteLine($"{AcountNum[i]}|{accountNames[i]}|{balances[i]} |{NationalID[i]}"); // update to save Natinalid as password 
                     }
                 }
                 Console.WriteLine("Account information saved successfully.");
@@ -435,15 +435,19 @@ namespace MiniBankSystem
                 AcountNum.Clear();
                 accountNames.Clear();
                 balances.Clear();
+                NationalID.Clear();
 
                 foreach (var line in File.ReadAllLines(AccountsFilePath))// Read all lines from the accounts file
                 {
                     var parts = line.Split('|');   // Split each line into parts based on the delimiter '|'
-                    if (parts.Length == 3)  // Ensure the line has exactly 3 parts (account number, account name, balance)
+                    if (parts.Length == 4)  // Ensure the line has exactly 3 parts (account number, account name, balance)
                     {
-                        AcountNum.Add(int.Parse(parts[0]));
-                        accountNames.Add(parts[1]);
-                        balances.Add(double.Parse(parts[2]));
+                        int index = AcountNum.Count;
+                        AcountNum.Insert(index,int.Parse(parts[0]));
+                        accountNames.Insert(index,parts[1]);
+                        balances.Insert(index,double.Parse(parts[2]));
+                        NationalID.Insert(index,(parts[3]));//save 
+
 
                         if (AcountNum[^1] > LastAccountNumber)   // Update the LastAccountNumber to be the highest account number found
                             LastAccountNumber = AcountNum[^1];
