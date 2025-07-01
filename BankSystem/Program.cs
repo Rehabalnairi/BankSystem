@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 namespace MiniBankSystem
 {
     internal class Program
@@ -9,12 +10,14 @@ namespace MiniBankSystem
         const string AccountsFilePath = "accounts.txt";
         const string RequestsFilePath = "requests.txt";
         const string ReviewsFilePath = "reviews.txt";
+        const string MonthlyReportFilePath = " Statement_Acc12345_2025-07.txt";
 
         static List<int> AcountNum = new List<int>();
         static List<string> accountNames = new List<string>() ;
         static List<double> balances = new List<double>() { 500.0, 300.0 };
 
         static Queue<string> RequestAccountCreate = new Queue<string>();
+      //  static Queue<string> RequestAccountCreate = new Queue<string>();
         static Stack<string> reviewsStack = new Stack<string>();
         const string AdminPassword = "Rehab23";
     
@@ -47,7 +50,7 @@ namespace MiniBankSystem
 
                         break;
                     case "2": AdminMenu(); break;
-                    case "3": RequestAccountCreation(); break; // Call CreateAccount method to handle account creation
+                    case "3": RequestAccountCreati(); break; // Call CreateAccount method to handle account creation
                     case "0": running = false; break;
                     default:
                         Console.WriteLine("Invalid option. Try again.");
@@ -69,7 +72,9 @@ namespace MiniBankSystem
                 Console.WriteLine("2. Deposit Money");
                 Console.WriteLine("3. Withdraw Money");
                 Console.WriteLine("4. Submit a Review");
-               // Console.WriteLine("5. Request Account Creation"); 
+                Console.WriteLine("5. show Monthliy report"); // Option to request account creation
+                   
+               Console.WriteLine("6. update information"); // Option to view reviews
                 Console.WriteLine("0. login Menu");
                 Console.WriteLine("Select an option: ");
 
@@ -81,7 +86,9 @@ namespace MiniBankSystem
                     case "2": Deposit(); break;
                     case "3": Withdraw(); break;
                     case "4": SubmitReview(); break;
-                  //  case "5": RequestAccountCreation(); break; 
+                   case "5": MonthlyReport(); break;
+                   case "6": UpdatePersonalInformation(); break; 
+
                     case "0": userMenuRunning = false; break;
                     default:
                         Console.WriteLine("Invalid option. Please try again.");
@@ -200,7 +207,7 @@ namespace MiniBankSystem
         //        }
         //    }
 
-        static void RequestAccountCreation()
+        static void RequestAccountCreati()
         {
             string name, nid;
             do
@@ -359,6 +366,9 @@ namespace MiniBankSystem
             }
             Console.WriteLine("\nPress any key to continue...");
             Console.ReadKey();
+            balances[index] -= amount; // Subtract the withdrawal amount from the account's balance
+            LogTransaction("Withdrawal", amount, index); // Log the withdrawal transaction
+
         }
 
         static void Deposit()
@@ -388,6 +398,9 @@ namespace MiniBankSystem
 
             Console.WriteLine("\nPress Enter to continue...");
             Console.ReadLine();
+
+            balances[index] += amount; // Add the deposit amount to the account's balance
+            LogTransaction("Deposit", amount, index); // Log the deposit transaction
         }
 
 
@@ -534,6 +547,61 @@ namespace MiniBankSystem
             catch
             {
                 Console.WriteLine("Error loading reviews.");
+            }
+        }
+
+        static void LogTransaction(string transactionType, double amount, int accountIndex)
+        {
+            // Log the transaction details to a file or console
+            string logEntry = $"{DateTime.Now}: {transactionType} of {amount} OMR for Account Number: {AcountNum[accountIndex]}";
+            File.AppendAllText("transaction_log.txt", logEntry + Environment.NewLine); // Append the log entry to a file
+            Console.WriteLine(logEntry);
+            // Optionally, you can write this log entry to a file
+        }
+        static void MonthlyReport()
+        {
+          Console.WriteLine("Enter account number for monthly report:");
+            if (int.TryParse(Console.ReadLine(), out int accountNumber))
+            {
+                int index = AcountNum.IndexOf(accountNumber);
+                if (index != -1)
+                {
+                    string reportContent = $"Monthly Statement for Account Number: {accountNumber}\n" +
+                                           $"Account Holder: {accountNames[index]}\n" +
+                                           $"Balance: {balances[index]} OMR\n" +
+                                           $"Date: {DateTime.Now.ToString("yyyy-MM-dd")}\n";
+                    File.WriteAllText(MonthlyReportFilePath, reportContent); // Write the report content to a file
+                    Console.WriteLine("Monthly report generated successfully.");
+                }
+                else
+                {
+                    Console.WriteLine("Account not found.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Invalid account number.");
+            }
+            Console.WriteLine("\nPress Enter to continue...");
+            Console.ReadLine();
+        }
+
+        static void UpdatePersonalInformation(int index)
+        {
+            Console.WriteLine("Enter your Age:");
+            string Age = Console.ReadLine().Trim();
+            if (!string.IsNullOrWhiteSpace(Age))
+            {
+                accountNames[index] = Age; // Update the account name
+                Console.WriteLine("Name updated successfully.");
+            }
+           
+           Console.WriteLine("Enter Your address ");
+            string address = Console.ReadLine().Trim();
+            if (!string.IsNullOrWhiteSpace(address))
+            {
+                accountNames[index] = address; // Update the account name
+                Console.WriteLine("Address updated successfully.");
             }
         }
     }
