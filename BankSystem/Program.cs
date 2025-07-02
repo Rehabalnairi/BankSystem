@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
+using System.Numerics;
 using System.Reflection;
+using System.Xml.Linq;
 namespace MiniBankSystem
 {
     internal class Program
@@ -23,7 +26,8 @@ namespace MiniBankSystem
     
         //List<string> approvedNationalIDs = new List<string>();
         static List <string> NationalID = new List<string>(); //store national Id in List 
-
+        static List <string> phoneNumbers = new List<string>(); //store phone numbers in List
+        static List<string> addresses = new List<string>(); //store addresses in List
         static int LastAccountNumber;
 
         static void Main()
@@ -46,7 +50,7 @@ namespace MiniBankSystem
                 {
                     case "1":int userIdxt = UserLogin();
                           if(userIdxt != -1) // Check if the user login was successful
-                            UserMenu(); // Call UserMenu method to display user options
+                            UserMenu(userIdxt); // Call UserMenu method to display user options
 
                         break;
                     case "2": AdminMenu(); break;
@@ -59,7 +63,7 @@ namespace MiniBankSystem
             }
         }
 
-        static void UserMenu()
+        static void UserMenu(int index)
         {
             bool userMenuRunning = true;
             while (userMenuRunning)
@@ -87,7 +91,7 @@ namespace MiniBankSystem
                     case "3": Withdraw(); break;
                     case "4": SubmitReview(); break;
                    case "5": MonthlyReport(); break;
-                   case "6": UpdatePersonalInformation(); break; 
+                   case "6": UpdatePersonalInformation(index); break; 
 
                     case "0": userMenuRunning = false; break;
                     default:
@@ -232,43 +236,23 @@ namespace MiniBankSystem
 
         static void ProcessNextRequest()
         {
-            if (RequestAccountCreate.Count == 0)
-            {
-                Console.WriteLine("No pending requests.");
-                return;
-            }
-
-            string request = RequestAccountCreate.Dequeue();
-            string[] parts = request.Split('|');
-
-            if (parts.Length != 2)
-            {
-                Console.WriteLine("Invalid request format.");
-                return;
-            }
-
-            string name = parts[0].Trim();
-            string nationalID = parts[1].Trim();// trim any extra spaces
-         
-
+            int newIndex = AcountNum.Count;
             int newAccountNumber = ++LastAccountNumber;
-            // Add new account details
-            AcountNum.Add(newAccountNumber);
-         
-            accountNames.Add(name);
-       
 
-
-            balances.Add(MinBalance);
+            AcountNum.Insert(newIndex, newAccountNumber);
+            accountNames.Insert(newIndex, name);
+            balances.Insert(newIndex, MinBalance);
+            NationalID.Insert(newIndex, nationalID);
+            phoneNumbers.Insert(newIndex, phone);
+            addresses.Insert(newIndex, address);
 
             Console.WriteLine("\nAccount created successfully:");
             Console.WriteLine($"Account Number: {newAccountNumber}");
             Console.WriteLine($"Account Holder: {name}");
-          
-          
             Console.WriteLine($"Initial Balance: {MinBalance} OMR");
             Console.WriteLine("\nPress Enter to continue...");
             Console.ReadLine();
+
         }
 
         static void ViewPendingRequests()
@@ -425,7 +409,7 @@ namespace MiniBankSystem
                   
                         for (int i = 0; i < AcountNum.Count; i++)
                     {
-                        writer.WriteLine($"{AcountNum[i]}|{accountNames[i]}|{balances[i]} |{NationalID[i]}"); // update to save Natinalid as password 
+                        writer.WriteLine($"{AcountNum[i]}|{accountNames[i]}|{balances[i]} |{NationalID[i] }|{phoneNumbers[i]}|{addresses[i]}"); // update to save Natinalid as password 
                     }
                 }
                 Console.WriteLine("Account information saved successfully.");
@@ -453,13 +437,15 @@ namespace MiniBankSystem
                 foreach (var line in File.ReadAllLines(AccountsFilePath))// Read all lines from the accounts file
                 {
                     var parts = line.Split('|');   // Split each line into parts based on the delimiter '|'
-                    if (parts.Length == 4)  // Ensure the line has exactly 3 parts (account number, account name, balance)
+                    if (parts.Length == 6)  // Ensure the line has exactly 3 parts (account number, account name, balance)
                     {
                         int index = AcountNum.Count;
-                        AcountNum.Insert(index,int.Parse(parts[0]));
-                        accountNames.Insert(index,parts[1]);
-                        balances.Insert(index,double.Parse(parts[2]));
-                        NationalID.Insert(index,(parts[3]));//save 
+                        AcountNum.Insert(index, int.Parse(parts[0]));
+                        accountNames.Insert(index, parts[1]);
+                        balances.Insert(index, double.Parse(parts[2]));
+                        NationalID.Insert(index, parts[3]);
+                        phoneNumbers.Insert(index, parts[4]);
+                        addresses.Insert(index, parts[5]);// save
 
 
                         if (AcountNum[^1] > LastAccountNumber)   // Update the LastAccountNumber to be the highest account number found
@@ -588,21 +574,26 @@ namespace MiniBankSystem
 
         static void UpdatePersonalInformation(int index)
         {
-            Console.WriteLine("Enter your Age:");
-            string Age = Console.ReadLine().Trim();
-            if (!string.IsNullOrWhiteSpace(Age))
+            Console.Write("Enter new phone number (or leave blank to keep current): ");
+            string newPhone = Console.ReadLine().Trim();
+            if (!string.IsNullOrWhiteSpace(newPhone))
             {
-                accountNames[index] = Age; // Update the account name
-                Console.WriteLine("Name updated successfully.");
+                phoneNumbers[index] = newPhone;
+                Console.WriteLine("Phone updated.");
             }
-           
-           Console.WriteLine("Enter Your address ");
-            string address = Console.ReadLine().Trim();
-            if (!string.IsNullOrWhiteSpace(address))
+
+            Console.Write("Enter new address (or leave blank to keep current): ");
+            string newAddress = Console.ReadLine().Trim();
+            if (!string.IsNullOrWhiteSpace(newAddress))
             {
-                accountNames[index] = address; // Update the account name
-                Console.WriteLine("Address updated successfully.");
+                addresses[index] = newAddress;
+                Console.WriteLine("Address updated.");
             }
+
+            SaveAccountInformationInFile(); // Save after update
+            Console.WriteLine("Changes saved.");
+            Console.ReadLine();
         }
+
     }
 }
