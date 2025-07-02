@@ -11,29 +11,54 @@ namespace MiniBankSystem
     {
         const double MinBalance = 100.0;
         const string AccountsFilePath = "accounts.txt";
-        const string RequestsFilePath = "requests.txt";
+        const string RequestsFilePath = "requests.txt"; 
         const string ReviewsFilePath = "reviews.txt";
         const string MonthlyReportFilePath = " Statement_Acc12345_2025-07.txt";
 
         static List<int> AcountNum = new List<int>();
-        static List<string> accountNames = new List<string>() ;
+        static List<string> accountNames = new List<string>();
         static List<double> balances = new List<double>() { 500.0, 300.0 };
 
         static Queue<string> RequestAccountCreate = new Queue<string>();
-      //  static Queue<string> RequestAccountCreate = new Queue<string>();
+        //  static Queue<string> RequestAccountCreate = new Queue<string>();
         static Stack<string> reviewsStack = new Stack<string>();
         const string AdminPassword = "Rehab23";
-    
+
         //List<string> approvedNationalIDs = new List<string>();
-        static List <string> NationalID = new List<string>(); //store national Id in List 
-        static List <string> phoneNumbers = new List<string>(); //store phone numbers in List
+        static List<string> NationalID = new List<string>(); //store national Id in List 
+        static List<string> phoneNumbers = new List<string>(); //store phone numbers in List
         static List<string> addresses = new List<string>(); //store addresses in List
+
+        static List<bool> hasActiveLoan = new List<bool>();
+        static Queue<string> loanRequests = new Queue<string>();
+
         static int LastAccountNumber;
 
         static void Main()
         {
+
             LoadAccountInformationFromFile();
             LoadReviews();
+
+            static void LoadPendingRequestsFromFile()
+            {
+                if (!File.Exists(RequestsFilePath)) return;
+
+                try
+                {
+                    RequestAccountCreate.Clear();
+                    foreach (var line in File.ReadAllLines(RequestsFilePath))
+                    {
+                        if (!string.IsNullOrWhiteSpace(line))
+                            RequestAccountCreate.Enqueue(line);
+                    }
+                }
+                catch
+                {
+                    Console.WriteLine("Error loading pending requests.");
+                }
+            }
+
 
             bool running = true;
             while (running)
@@ -48,14 +73,15 @@ namespace MiniBankSystem
                 string mainChoice = Console.ReadLine();
                 switch (mainChoice)
                 {
-                    case "1":int userIdxt = UserLogin();
-                          if(userIdxt != -1) // Check if the user login was successful
+                    case "1": int userIdxt = UserLogin();
+                        if (userIdxt != -1) // Check if the user login was successful
                             UserMenu(userIdxt); // Call UserMenu method to display user options
 
                         break;
                     case "2": AdminMenu(); break;
                     case "3": RequestAccountCreati(); break; // Call CreateAccount method to handle account creation
-                    case "0": running = false; break;
+                    case "0":
+                        running = false; break;
                     default:
                         Console.WriteLine("Invalid option. Try again.");
                         break;
@@ -69,7 +95,7 @@ namespace MiniBankSystem
             while (userMenuRunning)
             {
                 Console.Clear();
-            
+
 
                 Console.WriteLine("========== User Menu ==========");
                 Console.WriteLine("1. View Account Balance");
@@ -77,8 +103,10 @@ namespace MiniBankSystem
                 Console.WriteLine("3. Withdraw Money");
                 Console.WriteLine("4. Submit a Review");
                 Console.WriteLine("5. show Monthliy report"); // Option to request account creation
-                   
-               Console.WriteLine("6. update information"); // Option to view reviews
+
+                Console.WriteLine("6. update information"); // Option to view reviews
+                Console.WriteLine("7. Request Loan");
+
                 Console.WriteLine("0. login Menu");
                 Console.WriteLine("Select an option: ");
 
@@ -90,10 +118,14 @@ namespace MiniBankSystem
                     case "2": Deposit(); break;
                     case "3": Withdraw(); break;
                     case "4": SubmitReview(); break;
-                   case "5": MonthlyReport(); break;
-                   case "6": UpdatePersonalInformation(index); break; 
+                    case "5": MonthlyReport(); break;
+                    case "6": UpdatePersonalInformation(index); break;
+                    case "7": RequestLoan(index); break;
 
-                    case "0": userMenuRunning = false; break;
+
+                    case "0":
+
+                        userMenuRunning = false; break;
                     default:
                         Console.WriteLine("Invalid option. Please try again.");
                         Console.ReadKey();
@@ -102,10 +134,7 @@ namespace MiniBankSystem
             }
         }
 
-         static void CreateAccount()
-        {
-
-        }
+       
         static void AdminMenu()
         {
             bool adminMenuRunning = true;
@@ -119,6 +148,7 @@ namespace MiniBankSystem
                 Console.WriteLine("4. View Reviews");
                 Console.WriteLine("5. Save Account Information");
                 Console.WriteLine("6. Save Reviews");
+                Console.WriteLine("7. Process Loan Requests");
                 Console.WriteLine("0. Back to Main Menu");
                 Console.Write("Select an option: ");
                 string adminChoice = Console.ReadLine();
@@ -131,6 +161,8 @@ namespace MiniBankSystem
                     case "4": ViewReviews(); break;
                     case "5": SaveAccountInformationInFile(); break;
                     case "6": SaveReviews(); break;
+                    case "7": ProcessLoanRequests(); break;
+
                     case "0": adminMenuRunning = false; break;
                     default:
                         Console.WriteLine("Invalid option. Try again.");
@@ -144,10 +176,11 @@ namespace MiniBankSystem
 
         {
             Console.WriteLine("Enter your National ID (10 digits:");
-       
+
+
             try
             {
-               // int accNum = Convert.ToInt32(Console.ReadLine());
+                // int accNum = Convert.ToInt32(Console.ReadLine());
                 string inputID = Console.ReadLine().Trim(); // Read the National ID input and trim any extra spaces
 
                 int index = NationalID.IndexOf(inputID);
@@ -213,7 +246,11 @@ namespace MiniBankSystem
 
         static void RequestAccountCreati()
         {
+            
+
             string name, nid;
+           
+
             do
             {
                 Console.Write("Enter Full Name: ");
@@ -223,6 +260,8 @@ namespace MiniBankSystem
 
             do
             {
+
+
                 Console.Write("Enter 10-digit National ID: ");
                 nid = Console.ReadLine().Trim();
                 if (nid.Length != 10 || !nid.All(char.IsDigit))
@@ -234,8 +273,35 @@ namespace MiniBankSystem
             Console.ReadLine();
         }
 
+
         static void ProcessNextRequest()
         {
+            if (RequestAccountCreate.Count == 0)
+            {
+                Console.WriteLine("No pending requests.");
+                return;
+            }
+
+            string request = RequestAccountCreate.Dequeue();
+            string[] parts = request.Split('|');
+
+            if (parts.Length != 2)
+            {
+                Console.WriteLine("Invalid request format.");
+                return;
+            }
+
+            string name = parts[0].Trim();
+            string nationalID = parts[1].Trim();
+
+
+
+            Console.Write("Enter phone number: ");
+            string phone = Console.ReadLine().Trim();
+
+            Console.Write("Enter address: ");
+            string address = Console.ReadLine().Trim();
+
             int newIndex = AcountNum.Count;
             int newAccountNumber = ++LastAccountNumber;
 
@@ -245,6 +311,7 @@ namespace MiniBankSystem
             NationalID.Insert(newIndex, nationalID);
             phoneNumbers.Insert(newIndex, phone);
             addresses.Insert(newIndex, address);
+            hasActiveLoan.Insert(newIndex, false);
 
             Console.WriteLine("\nAccount created successfully:");
             Console.WriteLine($"Account Number: {newAccountNumber}");
@@ -253,7 +320,14 @@ namespace MiniBankSystem
             Console.WriteLine("\nPress Enter to continue...");
             Console.ReadLine();
 
+            SaveAccountInformationInFile(); // Save after creating account
+            Console.WriteLine("Account information saved.");
+            Console.ReadLine();
+
+
+
         }
+
 
         static void ViewPendingRequests()
         {
@@ -316,15 +390,15 @@ namespace MiniBankSystem
                 Console.WriteLine("No accounts available.");
                 return;
             }
-            else  
-            for (int i = 0; i < AcountNum.Count; i++) // for loop to iterate through all accounts
-                
-            {
-                Console.WriteLine($"Account Number: {AcountNum[i]}, Account Holder: {accountNames[i]}, Balance: {balances[i]} OMR");
-            }
-                Console.WriteLine("press Enter to Continue");
-                Console.ReadLine();
-            }
+            else
+                for (int i = 0; i < AcountNum.Count; i++) // for loop to iterate through all accounts
+
+                {
+                    Console.WriteLine($"Account Number: {AcountNum[i]}, Account Holder: {accountNames[i]}, Balance: {balances[i]} OMR");
+                }
+            Console.WriteLine("press Enter to Continue");
+            Console.ReadLine();
+        }
 
         static void Withdraw()
         {
@@ -404,23 +478,24 @@ namespace MiniBankSystem
         {
             try
             {
-                using (StreamWriter writer = new StreamWriter(AccountsFilePath)) // open file to write
+                using (StreamWriter writer = new StreamWriter(AccountsFilePath))
                 {
-                  
-                        for (int i = 0; i < AcountNum.Count; i++)
+                    for (int i = 0; i < AcountNum.Count; i++)
                     {
-                        writer.WriteLine($"{AcountNum[i]}|{accountNames[i]}|{balances[i]} |{NationalID[i] }|{phoneNumbers[i]}|{addresses[i]}"); // update to save Natinalid as password 
+                        writer.WriteLine($"{AcountNum[i]}|{accountNames[i]}|{balances[i]}|{NationalID[i]}|{phoneNumbers[i]}|{addresses[i]}|{hasActiveLoan[i]}");
+
                     }
                 }
                 Console.WriteLine("Account information saved successfully.");
             }
-            catch
+            catch (Exception ex)
             {
-                Console.WriteLine("Error saving account information."); // If an error occurs while saving, inform the user
+                Console.WriteLine("Error saving account information: " + ex.Message);
             }
             Console.WriteLine("\nPress any key to continue...");
             Console.ReadKey();
         }
+
 
         static void LoadAccountInformationFromFile()
         {
@@ -433,11 +508,17 @@ namespace MiniBankSystem
                 accountNames.Clear();
                 balances.Clear();
                 NationalID.Clear();
+                phoneNumbers.Clear();
+                addresses.Clear();
+                hasActiveLoan.Clear();
+
+                if (!File.Exists(AccountsFilePath)) return;
+
 
                 foreach (var line in File.ReadAllLines(AccountsFilePath))// Read all lines from the accounts file
                 {
                     var parts = line.Split('|');   // Split each line into parts based on the delimiter '|'
-                    if (parts.Length == 6)  // Ensure the line has exactly 3 parts (account number, account name, balance)
+                    if (parts.Length == 7)  // Ensure the line has exactly 3 parts (account number, account name, balance)
                     {
                         int index = AcountNum.Count;
                         AcountNum.Insert(index, int.Parse(parts[0]));
@@ -446,6 +527,7 @@ namespace MiniBankSystem
                         NationalID.Insert(index, parts[3]);
                         phoneNumbers.Insert(index, parts[4]);
                         addresses.Insert(index, parts[5]);// save
+                        hasActiveLoan.Insert(index, bool.Parse(parts[6]));
 
 
                         if (AcountNum[^1] > LastAccountNumber)   // Update the LastAccountNumber to be the highest account number found
@@ -464,7 +546,7 @@ namespace MiniBankSystem
             Console.WriteLine("Enter your review:");
             string review = Console.ReadLine();
             // Check if the review is not null, empty, or just whitespace
-            if (!string.IsNullOrWhiteSpace(review)) 
+            if (!string.IsNullOrWhiteSpace(review))
             {
                 reviewsStack.Push(review); // Push the valid review onto the stack
                 Console.WriteLine("Review submitted successfully.");
@@ -485,7 +567,7 @@ namespace MiniBankSystem
             }
 
             // Initialize a counter to display the review number
-            int i = 1; 
+            int i = 1;
             foreach (var review in reviewsStack)
             {
                 // Display each review with a number prefix
@@ -536,17 +618,35 @@ namespace MiniBankSystem
             }
         }
 
+        static void UpdateuserNUM()
+        {
+
+            Console.Write("Enter Phone Number: ");
+            string phone = Console.ReadLine().Trim();
+
+            Console.Write("Enter Address: ");
+            string address = Console.ReadLine().Trim();
+
+            int index = AcountNum.Count;
+           // phoneNumbers.Insert(newIndex, phone);
+            //addresses.Insert(newIndex, address);
+
+        }
+
         static void LogTransaction(string transactionType, double amount, int accountIndex)
         {
-            // Log the transaction details to a file or console
-            string logEntry = $"{DateTime.Now}: {transactionType} of {amount} OMR for Account Number: {AcountNum[accountIndex]}";
-            File.AppendAllText("transaction_log.txt", logEntry + Environment.NewLine); // Append the log entry to a file
-            Console.WriteLine(logEntry);
-            // Optionally, you can write this log entry to a file
+            static void LogTransaction(string transactionType, double amount, int accountIndex)
+            {
+                string logFileName = $"transactions_{AcountNum[accountIndex]}.txt";
+                string logEntry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}|{transactionType}|{amount}";
+
+                File.AppendAllText(logFileName, logEntry + Environment.NewLine);
+            }
+
         }
         static void MonthlyReport()
         {
-          Console.WriteLine("Enter account number for monthly report:");
+            Console.WriteLine("Enter account number for monthly report:");
             if (int.TryParse(Console.ReadLine(), out int accountNumber))
             {
                 int index = AcountNum.IndexOf(accountNumber);
@@ -595,5 +695,75 @@ namespace MiniBankSystem
             Console.ReadLine();
         }
 
+    
+   static void RequestLoan(int index)
+        {
+            if (balances[index] < 5000)
+            {
+                Console.WriteLine("You must have at least 5000 OMR to request a loan.");
+                Console.ReadLine();
+                return;
+            }
+
+            if (hasActiveLoan[index])
+            {
+                Console.WriteLine("You already have an active loan.");
+                Console.ReadLine();
+                return;
+            }
+
+            Console.Write("Enter desired loan amount: ");
+            if (!double.TryParse(Console.ReadLine(), out double loanAmount) || loanAmount <= 0)
+            {
+                Console.WriteLine("Invalid amount.");
+                Console.ReadLine();
+                return;
+            }
+
+            Console.Write("Enter interest rate (e.g., 0.05 for 5%): ");
+            if (!double.TryParse(Console.ReadLine(), out double interestRate) || interestRate < 0)
+            {
+                Console.WriteLine("Invalid interest rate.");
+                Console.ReadLine();
+                return;
+            }
+
+            loanRequests.Enqueue($"{index}|{loanAmount}|{interestRate}");
+            Console.WriteLine("Loan request submitted for review.");
+            Console.ReadLine();
+        }
+
+        static void ProcessLoanRequests()
+        {
+            while (loanRequests.Count > 0)
+            {
+                string request = loanRequests.Dequeue();
+                string[] parts = request.Split('|');
+                int index = int.Parse(parts[0]);
+                double amount = double.Parse(parts[1]);
+                double rate = double.Parse(parts[2]);
+
+                Console.WriteLine($"\nLoan Request for: {accountNames[index]}");
+                Console.WriteLine($"Amount: {amount} OMR, Interest Rate: {rate * 100}%");
+                Console.Write("Approve this loan? (y/n): ");
+                string choice = Console.ReadLine().ToLower();
+
+                if (choice == "y")
+                {
+                    balances[index] += amount;
+                    hasActiveLoan[index] = true;
+                    Console.WriteLine("Loan approved and balance updated.");
+                }
+                else
+                {
+                    Console.WriteLine("Loan request rejected.");
+                }
+            }
+
+            Console.WriteLine("All loan requests processed.");
+            Console.ReadLine();
+        }
     }
-}
+
+
+    }
