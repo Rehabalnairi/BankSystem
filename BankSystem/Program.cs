@@ -11,9 +11,12 @@ namespace MiniBankSystem
     {
         const double MinBalance = 100.0;
         const string AccountsFilePath = "accounts.txt";
-        const string RequestsFilePath = "requests.txt"; 
+        const string RequestsFilePath = "requests.txt";
         const string ReviewsFilePath = "reviews.txt";
         const string MonthlyReportFilePath = " Statement_Acc12345_2025-07.txt";
+        const string FeedbackFilePath = "feedback.txt";
+        const string backupFilePath = " Backup_2025-07-01_0930.txt"; // Path for backup file
+        const string TransactionFilePath = "transaction_log.txt";
 
         static List<int> AcountNum = new List<int>();
         static List<string> accountNames = new List<string>();
@@ -22,6 +25,7 @@ namespace MiniBankSystem
         static Queue<string> RequestAccountCreate = new Queue<string>();
         //  static Queue<string> RequestAccountCreate = new Queue<string>();
         static Stack<string> reviewsStack = new Stack<string>();
+        const string AdminID = "admin1";
         const string AdminPassword = "Rehab23";
 
         //List<string> approvedNationalIDs = new List<string>();
@@ -31,7 +35,8 @@ namespace MiniBankSystem
 
         static List<bool> hasActiveLoan = new List<bool>();
         static Queue<string> loanRequests = new Queue<string>();
-
+        static List<int> feedbackRatings = new List<int>();
+      //  static List <int > backup
         static int LastAccountNumber;
 
         static void Main()
@@ -39,6 +44,7 @@ namespace MiniBankSystem
 
             LoadAccountInformationFromFile();
             LoadReviews();
+            LoadFeedbackFromFile();
 
             static void LoadPendingRequestsFromFile()
             {
@@ -73,12 +79,17 @@ namespace MiniBankSystem
                 string mainChoice = Console.ReadLine();
                 switch (mainChoice)
                 {
-                    case "1": int userIdxt = UserLogin();
+                    case "1":
+                        int userIdxt = UserLogin();
                         if (userIdxt != -1) // Check if the user login was successful
                             UserMenu(userIdxt); // Call UserMenu method to display user options
 
                         break;
-                    case "2": AdminMenu(); break;
+                    case "2":
+                        if (AdminLogin())
+                            AdminMenu();
+                        break;
+
                     case "3": RequestAccountCreati(); break; // Call CreateAccount method to handle account creation
                     case "0":
                         running = false; break;
@@ -106,6 +117,8 @@ namespace MiniBankSystem
 
                 Console.WriteLine("6. update information"); // Option to view reviews
                 Console.WriteLine("7. Request Loan");
+                Console.WriteLine("8. View Last N Transactions");
+                Console.WriteLine("9. View Transactions After Date");
 
                 Console.WriteLine("0. login Menu");
                 Console.WriteLine("Select an option: ");
@@ -121,20 +134,27 @@ namespace MiniBankSystem
                     case "5": MonthlyReport(); break;
                     case "6": UpdatePersonalInformation(index); break;
                     case "7": RequestLoan(index); break;
+                    case "8": ViewLastNTransactions(index); break;
+                    case "9": ViewTransactionsAfterDate(index); break;
+                 
 
 
                     case "0":
 
                         userMenuRunning = false; break;
                     default:
+                        Console.Write("Do you want to create a backup before exiting? (y/n): ");
+                        if (Console.ReadLine().Trim().ToLower() == "y")
+                            BackupAllData();
                         Console.WriteLine("Invalid option. Please try again.");
                         Console.ReadKey();
+
                         break;
                 }
             }
         }
 
-       
+
         static void AdminMenu()
         {
             bool adminMenuRunning = true;
@@ -149,6 +169,9 @@ namespace MiniBankSystem
                 Console.WriteLine("5. Save Account Information");
                 Console.WriteLine("6. Save Reviews");
                 Console.WriteLine("7. Process Loan Requests");
+                Console.WriteLine("8. View Feedback Ratings");
+                Console.WriteLine("9. Backup All Data"); // Add backup option
+                Console.WriteLine("10. Print Transactions of a Use");
                 Console.WriteLine("0. Back to Main Menu");
                 Console.Write("Select an option: ");
                 string adminChoice = Console.ReadLine();
@@ -162,6 +185,10 @@ namespace MiniBankSystem
                     case "5": SaveAccountInformationInFile(); break;
                     case "6": SaveReviews(); break;
                     case "7": ProcessLoanRequests(); break;
+                    case "8": ViewFeedback(); break;  // Add to AdminMenu()
+                    case "9": BackupAllData(); break; // Add backup option
+                    case "10": PrintTransactionsOfUser(); break;
+
 
                     case "0": adminMenuRunning = false; break;
                     default:
@@ -169,6 +196,36 @@ namespace MiniBankSystem
                         break;
                 }
             }
+        }
+
+
+        static bool AdminLogin()
+        {
+            int attempts = 0;
+            while (attempts < 3)
+            {
+                Console.Write("Enter Admin ID: ");
+                string enteredID = Console.ReadLine().Trim();
+
+                Console.Write("Enter Admin Password: ");
+                string enteredPassword = Console.ReadLine().Trim();
+
+                if (enteredID == AdminID && enteredPassword == AdminPassword)
+                {
+                    Console.WriteLine("Admin login successful.");
+                    Console.ReadLine();
+                    return true;
+                }
+                else
+                {
+                    Console.WriteLine("Invalid Admin ID or Password.\n");
+                    attempts++;
+                }
+            }
+
+            Console.WriteLine("Too many failed attempts. Returning to main menu...");
+            Console.ReadLine();
+            return false;
         }
 
 
@@ -208,21 +265,21 @@ namespace MiniBankSystem
                 return -1;
             }
         }
-        static bool AdminLogin()
-        {
-            Console.WriteLine("Enter admin password:");
-            string password = Console.ReadLine();
-            if (password == AdminPassword)
-            {
-                Console.WriteLine("Welcome, Admin!");
-                return true;
-            }
-            else
-            {
-                Console.WriteLine("Incorrect password.");
-                return false;
-            }
-        }
+        //static bool AdminLogin()
+        //{
+        //    Console.WriteLine("Enter admin password:");
+        //    string password = Console.ReadLine();
+        //    if (password == AdminPassword)
+        //    {
+        //        Console.WriteLine("Welcome, Admin!");
+        //        return true;
+        //    }
+        //    else
+        //    {
+        //        Console.WriteLine("Incorrect password.");
+        //        return false;
+        //    }
+        //}
 
 
         //    if (!File.Exists(AccountsFilePath))
@@ -246,10 +303,10 @@ namespace MiniBankSystem
 
         static void RequestAccountCreati()
         {
-            
+
 
             string name, nid;
-           
+
 
             do
             {
@@ -427,6 +484,7 @@ namespace MiniBankSystem
             balances[index] -= amount; // Subtract the withdrawal amount from the account's balance
             LogTransaction("Withdrawal", amount, index); // Log the withdrawal transaction
 
+            CollectFeedback();
         }
 
         static void Deposit()
@@ -459,6 +517,7 @@ namespace MiniBankSystem
 
             balances[index] += amount; // Add the deposit amount to the account's balance
             LogTransaction("Deposit", amount, index); // Log the deposit transaction
+            CollectFeedback();
         }
 
 
@@ -628,22 +687,20 @@ namespace MiniBankSystem
             string address = Console.ReadLine().Trim();
 
             int index = AcountNum.Count;
-           // phoneNumbers.Insert(newIndex, phone);
+            // phoneNumbers.Insert(newIndex, phone);
             //addresses.Insert(newIndex, address);
 
         }
 
-        static void LogTransaction(string transactionType, double amount, int accountIndex)
-        {
-            static void LogTransaction(string transactionType, double amount, int accountIndex)
+      
+      static void LogTransaction(string transactionType, double amount, int accountIndex)
             {
                 string logFileName = $"transactions_{AcountNum[accountIndex]}.txt";
-                string logEntry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}|{transactionType}|{amount}";
-
-                File.AppendAllText(logFileName, logEntry + Environment.NewLine);
+                string logEntry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}|{AcountNum[accountIndex]}|{transactionType}|{amount}|{balances[accountIndex]}";
+                File.AppendAllText(TransactionFilePath, logEntry + Environment.NewLine);
             }
 
-        }
+        
         static void MonthlyReport()
         {
             Console.WriteLine("Enter account number for monthly report:");
@@ -695,8 +752,8 @@ namespace MiniBankSystem
             Console.ReadLine();
         }
 
-    
-   static void RequestLoan(int index)
+
+        static void RequestLoan(int index)
         {
             if (balances[index] < 5000)
             {
@@ -763,7 +820,224 @@ namespace MiniBankSystem
             Console.WriteLine("All loan requests processed.");
             Console.ReadLine();
         }
-    }
+
+
+        static void ViewLastNTransactions(int accountIndex)
+        {
+            string filePath = $"transactions_{AcountNum[accountIndex]}.txt";
+            if (!File.Exists(filePath))
+            {
+                Console.WriteLine("No transaction history found.");
+                Console.ReadLine();
+                return;
+            }
+
+            Console.Write("Enter number of recent transactions to view: ");
+            if (!int.TryParse(Console.ReadLine(), out int n) || n <= 0)
+            {
+                Console.WriteLine("Invalid number.");
+                Console.ReadLine();
+                return;
+            }
+
+            var allLines = File.ReadAllLines(filePath);
+            var lastN = allLines.Reverse().Take(n);
+
+            Console.WriteLine($"\nLast {n} transactions:");
+            foreach (var line in lastN.Reverse())
+                Console.WriteLine(line);
+
+            Console.WriteLine("\nPress Enter to continue...");
+            Console.ReadLine();
+        }
+
+        static void ViewTransactionsAfterDate(int accountIndex)
+        {
+            string filePath = $"transactions_{AcountNum[accountIndex]}.txt";
+            if (!File.Exists(filePath))
+            {
+                Console.WriteLine("No transaction history found.");
+                Console.ReadLine();
+                return;
+            }
+
+            Console.Write("Enter date (yyyy-MM-dd): ");
+            if (!DateTime.TryParse(Console.ReadLine(), out DateTime dateFilter))
+            {
+                Console.WriteLine("Invalid date format.");
+                Console.ReadLine();
+                return;
+            }
+
+            var lines = File.ReadAllLines(filePath);
+            Console.WriteLine($"\nTransactions after {dateFilter:yyyy-MM-dd}:");
+
+            foreach (var line in lines)
+            {
+                string[] parts = line.Split('|');
+                if (parts.Length >= 3 && DateTime.TryParse(parts[0], out DateTime timestamp))
+                {
+                    if (timestamp > dateFilter)
+                        Console.WriteLine(line);
+                }
+            }
+
+            Console.WriteLine("\nPress Enter to continue...");
+            Console.ReadLine();
+        }
+
+        static void CollectFeedback()
+        {
+            Console.Write("Please rate our service (1–5): ");
+            if (int.TryParse(Console.ReadLine(), out int rating) && rating >= 1 && rating <= 5)
+            {
+                feedbackRatings.Add(rating);
+                try
+                {
+                    File.AppendAllText(FeedbackFilePath, rating + Environment.NewLine);
+                    Console.WriteLine("Thank you for your feedback!");
+                }
+                catch
+                {
+                    Console.WriteLine("Error saving feedback.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Invalid rating. Feedback not recorded.");
+            }
+
+            Console.WriteLine("Press Enter to continue...");
+            Console.ReadLine();
+        }
+
+        static void LoadFeedbackFromFile()
+        {
+            if (!File.Exists(FeedbackFilePath)) return;
+
+            feedbackRatings.Clear();
+            try
+            {
+                foreach (var line in File.ReadAllLines(FeedbackFilePath))
+                {
+                    if (int.TryParse(line.Trim(), out int rating) && rating >= 1 && rating <= 5)
+                    {
+                        feedbackRatings.Add(rating);
+                    }
+                }
+            }
+            catch
+            {
+                Console.WriteLine("Error loading feedback ratings.");
+            }
+        }
+
+        static void ViewFeedback()
+        {
+            Console.WriteLine(" this is a feedback Ratings");
+            if (feedbackRatings.Count == 0)
+
+            {
+                Console.WriteLine("No feedback ratings available.");
+                return;
+            }
+            else
+            {
+                double averageRating = feedbackRatings.Average(); // Calculate the average rating
+                Console.WriteLine($"Total Ratings: {feedbackRatings.Count}");
+                Console.WriteLine($"Average Feedback Score: {averageRating:F2} / 5");
+
+                Console.ReadLine();
+
+            }
+
+        }
+
+        static void BackupAllData()
+        {
+         
+
+            try
+            {
+                using (StreamWriter writer = new StreamWriter(backupFilePath))
+                {
+                    writer.WriteLine("==== ACCOUNT DATA ====");
+                    for (int i = 0; i < AcountNum.Count; i++)
+                    {
+                        writer.WriteLine($"{AcountNum[i]}|{accountNames[i]}|{balances[i]}|{NationalID[i]}|{phoneNumbers[i]}|{addresses[i]}|{hasActiveLoan[i]}");
+                    }
+
+                    writer.WriteLine("\n==== REVIEWS ====");
+                    foreach (var review in reviewsStack)
+                        writer.WriteLine(review);
+
+                    writer.WriteLine("\n==== FEEDBACK RATINGS ====");
+                    foreach (var rating in feedbackRatings)
+                        writer.WriteLine(rating);
+
+                    writer.WriteLine("\n==== TRANSACTIONS ====");
+                    if (File.Exists("transaction_log.txt"))
+                        writer.Write(File.ReadAllText("transaction_log.txt"));
+
+                    writer.WriteLine("\n==== PENDING ACCOUNT REQUESTS ====");
+                    foreach (var req in RequestAccountCreate)
+                        writer.WriteLine(req);
+
+                    writer.WriteLine("\n==== LOAN REQUESTS ====");
+                    foreach (var loan in loanRequests)
+                        writer.WriteLine(loan);
+                }
+                Console.WriteLine("Backup saved to file: " + backupFilePath);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Backup failed: " + ex.Message);
+            }
+
+            Console.WriteLine("\nPress Enter to continue...");
+            Console.ReadLine();
+        }
+
+        static void PrintTransactionsOfUser()
+        {
+            Console.Write("Enter Account Number: ");
+            if (!int.TryParse(Console.ReadLine(), out int accNum))
+            {
+                Console.WriteLine("Invalid account number.");
+                return;
+            }
+
+            if (!File.Exists(TransactionFilePath))
+            {
+                Console.WriteLine("Transaction log file not found.");
+                return;
+            }
+
+            var lines = File.ReadAllLines(TransactionFilePath);
+            bool found = false;
+
+            Console.WriteLine($"\nTransactions for Account #{accNum}:");
+            Console.WriteLine("Date & Time\t\tType\tAmount\tBalance");
+
+            foreach (var line in lines)
+            {
+                var parts = line.Split('|');
+                if (parts.Length == 5 && parts[1] == accNum.ToString())
+                {
+                    Console.WriteLine($"{parts[0],-20} {parts[2],-8} {parts[3],-6} {parts[4]}");
+                    found = true;
+                }
+            }
+
+            if (!found)
+                Console.WriteLine("No transactions found for this account.");
+
+            Console.WriteLine("\nPress Enter to continue...");
+            Console.ReadLine();
+        }
+
+
 
 
     }
+}
