@@ -36,7 +36,9 @@ namespace MiniBankSystem
         static List<bool> hasActiveLoan = new List<bool>();
         static Queue<string> loanRequests = new Queue<string>();
         static List<int> feedbackRatings = new List<int>();
-      //  static List <int > backup
+        static Queue<string> appointments = new Queue<string>();
+        static List<int> usersWithAppointments = new List<int>(); // To track user indexes
+
         static int LastAccountNumber;
 
         static void Main()
@@ -136,7 +138,7 @@ namespace MiniBankSystem
                     case "7": RequestLoan(index); break;
                     case "8": ViewLastNTransactions(index); break;
                     case "9": ViewTransactionsAfterDate(index); break;
-                 
+
 
 
                     case "0":
@@ -692,15 +694,15 @@ namespace MiniBankSystem
 
         }
 
-      
-      static void LogTransaction(string transactionType, double amount, int accountIndex)
-            {
-                string logFileName = $"transactions_{AcountNum[accountIndex]}.txt";
-                string logEntry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}|{AcountNum[accountIndex]}|{transactionType}|{amount}|{balances[accountIndex]}";
-                File.AppendAllText(TransactionFilePath, logEntry + Environment.NewLine);
-            }
 
-        
+        static void LogTransaction(string transactionType, double amount, int accountIndex)
+        {
+            string logFileName = $"transactions_{AcountNum[accountIndex]}.txt";
+            string logEntry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}|{AcountNum[accountIndex]}|{transactionType}|{amount}|{balances[accountIndex]}";
+            File.AppendAllText(TransactionFilePath, logEntry + Environment.NewLine);
+        }
+
+
         static void MonthlyReport()
         {
             Console.WriteLine("Enter account number for monthly report:");
@@ -955,7 +957,7 @@ namespace MiniBankSystem
 
         static void BackupAllData()
         {
-         
+
 
             try
             {
@@ -1037,7 +1039,25 @@ namespace MiniBankSystem
         }
 
 
+        static void ViewAppointments()
+        {
+            Console.WriteLine("\nUpcoming Appointments:");
+            if (appointments.Count == 0)
+            {
+                Console.WriteLine("No upcoming appointments.");
+            }
+            else
+            {
+                foreach (var appointment in appointments)
+                {
+                    var parts = appointment.Split('|');
+                    Console.WriteLine($"User: {parts[0]} (#{parts[1]}), Service: {parts[2]}, Date & Time: {parts[3]}");
+                }
+            }
 
+            Console.WriteLine("\nPress Enter to continue...");
+            Console.ReadLine();
+        }
 
     }
 }
