@@ -759,13 +759,24 @@ namespace MiniBankSystem
         }
 
 
-       
-       static void LogTransaction(string transactionType, double originalAmount, double convertedAmount, int accountIndex)
+
+        static void LogTransaction(string transactionType, double originalAmount, double convertedAmount, int accountIndex)
         {
-            string logEntry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} | {transactionType} | Original: {originalAmount} | Converted: {convertedAmount} OMR | Account: {AcountNum[accountIndex]} | New Balance: {balances[accountIndex]}";
+            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            int accountNumber = AcountNum[accountIndex];
+
+            string logEntry = $"{timestamp} | {transactionType} | Original: {originalAmount} | Converted: {convertedAmount} OMR | Account: {accountNumber} | New Balance: {balances[accountIndex]}";
+
+            // Log to the central file (optional)
             File.AppendAllText("transaction_log.txt", logEntry + Environment.NewLine);
+
+            // ✅ Log to user-specific file
+            string userLogFile = $"transactions_{accountNumber}.txt";
+            File.AppendAllText(userLogFile, logEntry + Environment.NewLine);
+
             Console.WriteLine(logEntry);
         }
+
 
 
         static void MonthlyReport()
