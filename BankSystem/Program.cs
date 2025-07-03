@@ -606,11 +606,10 @@ namespace MiniBankSystem
 
         static void LoadAccountInformationFromFile()
         {
-            if (!File.Exists(AccountsFilePath)) return;  // Check if the accounts file exists at the specified path
+            if (!File.Exists(AccountsFilePath)) return;
 
             try
             {
-                // Clear the existing data collections to ensure fresh loading
                 AcountNum.Clear();
                 accountNames.Clear();
                 balances.Clear();
@@ -618,39 +617,46 @@ namespace MiniBankSystem
                 phoneNumbers.Clear();
                 addresses.Clear();
                 hasActiveLoan.Clear();
+                failedLoginAttempts.Clear();
+                isAccountLocked.Clear();
 
-                if (!File.Exists(AccountsFilePath)) return;
-
-
-                foreach (var line in File.ReadAllLines(AccountsFilePath))// Read all lines from the accounts file
+                foreach (var line in File.ReadAllLines(AccountsFilePath))
                 {
-                    var parts = line.Split('|');   // Split each line into parts based on the delimiter '|'
-                    if (parts.Length == 7)  // Ensure the line has exactly 3 parts (account number, account name, balance)
+                    var parts = line.Split('|');
+                    if (parts.Length == 9)
                     {
-                        if (parts.Length == 9)
-                        {
-                            AcountNum.Add(int.Parse(parts[0]));
-                            accountNames.Add(parts[1]);
-                            balances.Add(double.Parse(parts[2]));
-                            NationalID.Add(parts[3]);
-                            phoneNumbers.Add(parts[4]);
-                            addresses.Add(parts[5]);
-                            hasActiveLoan.Add(bool.Parse(parts[6]));
-                            failedLoginAttempts.Add(int.Parse(parts[7]));
-                            isAccountLocked.Add(bool.Parse(parts[8]));
-                        }
+                        AcountNum.Add(int.Parse(parts[0]));
+                        accountNames.Add(parts[1]);
+                        balances.Add(double.Parse(parts[2]));
+                        NationalID.Add(parts[3]);
+                        phoneNumbers.Add(parts[4]);
+                        addresses.Add(parts[5]);
+                        hasActiveLoan.Add(bool.Parse(parts[6]));
+                        failedLoginAttempts.Add(int.Parse(parts[7]));
+                        isAccountLocked.Add(bool.Parse(parts[8]));
 
-
-                        if (AcountNum[^1] > LastAccountNumber)   // Update the LastAccountNumber to be the highest account number found
+                        if (AcountNum[^1] > LastAccountNumber)
                             LastAccountNumber = AcountNum[^1];
                     }
+                    else
+                    {
+                        Console.WriteLine("Skipped invalid line in accounts file: " + line);
+                    }
                 }
+
+                // Just in case older format used
+                while (failedLoginAttempts.Count < AcountNum.Count)
+                    failedLoginAttempts.Add(0);
+
+                while (isAccountLocked.Count < AcountNum.Count)
+                    isAccountLocked.Add(false);
             }
             catch
             {
                 Console.WriteLine("Error loading account information.");
             }
         }
+
 
         static void SubmitReview()
         {
