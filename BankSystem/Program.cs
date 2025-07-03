@@ -270,7 +270,7 @@ namespace MiniBankSystem
             Console.Write("Enter password (your National ID): ");
             string enteredPassword = Console.ReadLine().Trim();
 
-            if (enteredPassword == NationalID[index]) // using National ID as password
+            if (enteredPassword == NationalID[index])
             {
                 failedLoginAttempts[index] = 0; // reset counter
                 Console.WriteLine($"Welcome, {accountNames[index]}!");
@@ -293,6 +293,7 @@ namespace MiniBankSystem
                 return -1;
             }
         }
+
 
         //static bool AdminLogin()
         //{
@@ -398,6 +399,8 @@ namespace MiniBankSystem
             phoneNumbers.Insert(newIndex, phone);
             addresses.Insert(newIndex, address);
             hasActiveLoan.Insert(newIndex, false);
+            failedLoginAttempts.Insert(newIndex, 0);
+            isAccountLocked.Insert(newIndex, false);
 
             Console.WriteLine("\nAccount created successfully:");
             Console.WriteLine($"Account Number: {newAccountNumber}");
@@ -628,7 +631,7 @@ namespace MiniBankSystem
                         AcountNum.Add(int.Parse(parts[0]));
                         accountNames.Add(parts[1]);
                         balances.Add(double.Parse(parts[2]));
-                        NationalID.Add(parts[3]);
+                        NationalID.Add(parts[3].Trim());
                         phoneNumbers.Add(parts[4]);
                         addresses.Add(parts[5]);
                         hasActiveLoan.Add(bool.Parse(parts[6]));
@@ -644,13 +647,18 @@ namespace MiniBankSystem
                     }
                 }
 
-                // Just in case older format used
-                while (failedLoginAttempts.Count < AcountNum.Count)
-                    failedLoginAttempts.Add(0);
+    
+                for (int i = 0; i < AcountNum.Count; i++)
+                {
+                    Console.WriteLine($"[{i}] Account: {AcountNum[i]}, Name: {accountNames[i]}, NID: {NationalID[i]}, Locked: {isAccountLocked[i]}, Attempts: {failedLoginAttempts[i]}");
+                }
 
-                while (isAccountLocked.Count < AcountNum.Count)
-                    isAccountLocked.Add(false);
-            }
+
+
+
+            } 
+
+
             catch
             {
                 Console.WriteLine("Error loading account information.");
