@@ -770,31 +770,83 @@ namespace MiniBankSystem
 
         static void MonthlyReport()
         {
-            Console.WriteLine("Enter account number for monthly report:");
-            if (int.TryParse(Console.ReadLine(), out int accountNumber))
-            {
-                int index = AcountNum.IndexOf(accountNumber);
-                if (index != -1)
-                {
-                    string reportContent = $"Monthly Statement for Account Number: {accountNumber}\n" +
-                                           $"Account Holder: {accountNames[index]}\n" +
-                                           $"Balance: {balances[index]} OMR\n" +
-                                           $"Date: {DateTime.Now.ToString("yyyy-MM-dd")}\n";
-                    File.WriteAllText(MonthlyReportFilePath, reportContent); // Write the report content to a file
-                    Console.WriteLine("Monthly report generated successfully.");
-                }
-                else
-                {
-                    Console.WriteLine("Account not found.");
-                }
-            }
-            else
+            Console.WriteLine("Enter your account number:");
+            if (!int.TryParse(Console.ReadLine(), out int accountNumber))
             {
                 Console.WriteLine("Invalid account number.");
+                Console.ReadLine();
+                return;
             }
-            Console.WriteLine("\nPress Enter to continue...");
+
+            int index = AcountNum.IndexOf(accountNumber);
+            if (index == -1)
+            {
+                Console.WriteLine("Account not found.");
+                Console.ReadLine();
+                return;
+            }
+
+            Console.Write("Enter month (1–12): ");
+            if (!int.TryParse(Console.ReadLine(), out int month) || month < 1 || month > 12)
+            {
+                Console.WriteLine("Invalid month.");
+                Console.ReadLine();
+                return;
+            }
+
+            Console.Write("Enter year (e.g., 2025): ");
+            if (!int.TryParse(Console.ReadLine(), out int year) || year < 2000 || year > DateTime.Now.Year + 5)
+            {
+                Console.WriteLine("Invalid year.");
+                Console.ReadLine();
+                return;
+            }
+
+            string filePath = $"transactions_{accountNumber}.txt";
+            if (!File.Exists(filePath))
+            {
+                Console.WriteLine("No transaction history found.");
+                Console.ReadLine();
+                return;
+            }
+
+            var lines = File.ReadAllLines(filePath);
+            List<string> filteredTransactions = new List<string>();
+
+            foreach (var line in lines)
+            {
+                string[] parts = line.Split('|');
+                if (parts.Length >= 1 && DateTime.TryParse(parts[0], out DateTime date))
+                {
+                    if (date.Month == month && date.Year == year)
+                        filteredTransactions.Add(line);
+                }
+            }
+
+            if (filteredTransactions.Count == 0)
+            {
+                Console.WriteLine($"No transactions found for {year}-{month:D2}.");
+                Console.ReadLine();
+                return;
+            }
+
+            string statementFile = $"Statement_Acc{accountNumber}_{year}-{month:D2}.txt";
+            using (StreamWriter writer = new StreamWriter(statementFile))
+            {
+                writer.WriteLine($"Monthly Statement for Account #{accountNumber}");
+                writer.WriteLine($"Account Holder: {accountNames[index]}");
+                writer.WriteLine($"Month: {year}-{month:D2}");
+                writer.WriteLine("=====================================");
+                foreach (var entry in filteredTransactions)
+                    writer.WriteLine(entry);
+                writer.WriteLine("=====================================");
+                writer.WriteLine($"Balance: {balances[index]:F2} OMR");
+            }
+
+            Console.WriteLine($"Statement saved to file: {statementFile}");
             Console.ReadLine();
         }
+
 
         static void UpdatePersonalInformation(int index)
         {
