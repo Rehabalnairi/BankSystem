@@ -4,7 +4,10 @@ using System.IO;
 using System.Net;
 using System.Numerics;
 using System.Reflection;
+using System.Text;
 using System.Xml.Linq;
+using System.Security.Cryptography;
+
 namespace MiniBankSystem
 {
     internal class Program
@@ -38,7 +41,6 @@ namespace MiniBankSystem
         static List<string> NationalID = new List<string>(); //store national Id in List 
         static List<string> phoneNumbers = new List<string>(); //store phone numbers in List
         static List<string> addresses = new List<string>(); //store addresses in List
-
         static List<bool> hasActiveLoan = new List<bool>();
         static Queue<string> loanRequests = new Queue<string>();
         static List<int> feedbackRatings = new List<int>();
@@ -46,10 +48,10 @@ namespace MiniBankSystem
         static List<int> usersWithAppointments = new List<int>(); // To track user indexes
         static List<int> failedLoginAttempts = new List<int>();
         static List<bool> isAccountLocked = new List<bool>();
-
-
+        static List<string> hashedPasswords = new List<string>();
 
         static int LastAccountNumber;
+                
 
         static void Main()
         {
@@ -57,6 +59,8 @@ namespace MiniBankSystem
             LoadAccountInformationFromFile();
             LoadReviews();
             LoadFeedbackFromFile();
+
+          
 
             static void LoadPendingRequestsFromFile()
             {
@@ -111,7 +115,19 @@ namespace MiniBankSystem
                 }
             }
         }
-
+        static string HashPassword(string password)
+        {
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+                StringBuilder builder = new StringBuilder();
+                foreach (byte b in bytes)
+                {
+                    builder.Append(b.ToString("x2"));
+                }
+                return builder.ToString();
+            }
+        }
         static void UserMenu(int index)
         {
             bool userMenuRunning = true;
@@ -267,12 +283,30 @@ namespace MiniBankSystem
                 return -1;
             }
 
-            Console.Write("Enter password (your National ID): ");
-            string enteredPassword = Console.ReadLine().Trim();
-
-            if (enteredPassword == NationalID[index])
+            Console.Write("Enter password: ");
+            string enteredPassword = "";
+            ConsoleKeyInfo key;
+            do
             {
-                failedLoginAttempts[index] = 0; // reset counter
+                key = Console.ReadKey(true);
+                if (key.Key != ConsoleKey.Backspace && key.Key != ConsoleKey.Enter)
+                {
+                    enteredPassword += key.KeyChar;
+                    Console.Write("*");
+                }
+                else if (key.Key == ConsoleKey.Backspace && enteredPassword.Length > 0)
+                {
+                    enteredPassword = enteredPassword.Substring(0, enteredPassword.Length - 1);
+                    Console.Write("\b \b");
+                }
+            } while (key.Key != ConsoleKey.Enter);
+            Console.WriteLine();
+
+            string enteredHash = HashPassword(enteredPassword);
+
+            if (enteredHash == hashedPasswords[index])
+            {
+                failedLoginAttempts[index] = 0;
                 Console.WriteLine($"Welcome, {accountNames[index]}!");
                 Console.ReadLine();
                 return index;
@@ -293,6 +327,8 @@ namespace MiniBankSystem
                 return -1;
             }
         }
+
+
 
 
         //static bool AdminLogin()
@@ -333,11 +369,7 @@ namespace MiniBankSystem
 
         static void RequestAccountCreati()
         {
-
-
-            string name, nid;
-
-
+           string name, nid;
             do
             {
                 Console.Write("Enter Full Name: ");
@@ -379,9 +411,7 @@ namespace MiniBankSystem
             }
 
             string name = parts[0].Trim();
-            string nationalID = parts[1].Trim();
-
-
+            string nationalID = parts[1].Trim(); // ✅ Now you have the value
 
             Console.Write("Enter phone number: ");
             string phone = Console.ReadLine().Trim();
@@ -391,6 +421,10 @@ namespace MiniBankSystem
 
             int newIndex = AcountNum.Count;
             int newAccountNumber = ++LastAccountNumber;
+
+            // ✅ Hash the password using the user's national ID
+            string hashedPassword = HashPassword(nationalID);
+            hashedPasswords.Insert(newIndex, hashedPassword);
 
             AcountNum.Insert(newIndex, newAccountNumber);
             accountNames.Insert(newIndex, name);
@@ -412,9 +446,6 @@ namespace MiniBankSystem
             SaveAccountInformationInFile(); // Save after creating account
             Console.WriteLine("Account information saved.");
             Console.ReadLine();
-
-
-
         }
 
 
@@ -626,7 +657,7 @@ namespace MiniBankSystem
                 foreach (var line in File.ReadAllLines(AccountsFilePath))
                 {
                     var parts = line.Split('|');
-                    if (parts.Length == 9)
+                    if (parts.Length == 10)
                     {
                         AcountNum.Add(int.Parse(parts[0]));
                         accountNames.Add(parts[1]);
@@ -637,6 +668,7 @@ namespace MiniBankSystem
                         hasActiveLoan.Add(bool.Parse(parts[6]));
                         failedLoginAttempts.Add(int.Parse(parts[7]));
                         isAccountLocked.Add(bool.Parse(parts[8]));
+                        hashedPasswords.Add(parts[9].Trim()); // Store the hashed password
 
                         if (AcountNum[^1] > LastAccountNumber)
                             LastAccountNumber = AcountNum[^1];
@@ -770,7 +802,7 @@ namespace MiniBankSystem
             // Log to the central file (optional)
             File.AppendAllText("transaction_log.txt", logEntry + Environment.NewLine);
 
-            // ✅ Log to user-specific file
+            //  Log to user-specific file
             string userLogFile = $"transactions_{accountNumber}.txt";
             File.AppendAllText(userLogFile, logEntry + Environment.NewLine);
 
@@ -869,7 +901,7 @@ namespace MiniBankSystem
                 Console.WriteLine("Phone updated.");
             }
 
-            Console.Write("Enter new address (or leave blank to keep current): ");
+            Console.Write("Enter new address: ");
             string newAddress = Console.ReadLine().Trim();
             if (!string.IsNullOrWhiteSpace(newAddress))
             {
@@ -1024,7 +1056,7 @@ namespace MiniBankSystem
                 feedbackRatings.Add(rating);
                 try
                 {
-                    File.AppendAllText(FeedbackFilePath, rating + Environment.NewLine);
+                    File.AppendAllText(FeedbackFilePath, rating + Environment.NewLine); //use for open txt file
                     Console.WriteLine("Thank you for your feedback!");
                 }
                 catch
